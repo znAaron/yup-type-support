@@ -1,7 +1,8 @@
 import * as ts from 'typescript'
 import { factory } from 'typescript';
 
-import YtContext, { InterfaceDetail, InterfaceEntry } from './YupType.Context'
+import type YtContext from './YupType.Context';
+import type { InterfaceDetail, InterfaceEntry } from './YupType.Context';
 import type { NodeVisitor } from '@znaaron/simple-ts-transform'
 
 const enum DFANodeGroup {

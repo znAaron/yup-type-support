@@ -1,14 +1,15 @@
 {
   "name": "yup-type-support",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A typescript support for yup. Able to infer the yup schema from a typescript interface.",
   "main": "./build/index.js",
+  "typings": "./dist/index.d.ts",
   "files": [
     "build/**",
     "!dist/tests/**"
   ],
   "scripts": {
-    "prepublish": "npm run all",
+    "prepublishOnly": "npm run all",
     "all": "npm run build",
     "build": "ttsc",
     "clean": "rm -r build",

@@ -1,0 +1,20 @@
+{
+  "name": "yup-type-support",
+  "version": "1.0.0",
+  "description": "A typescript support for yup. Able to infer the yup schema from a typescript interface.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Zinan",
+  "license": "ISC",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.101",
+    "@znaaron/simple-ts-transform": "^1.1.2",
+    "yup": "^0.32.11"
+  },
+  "devDependencies": {
+    "ttypescript": "^1.5.13",
+    "typescript": "^4.7.4"
+  }
+}

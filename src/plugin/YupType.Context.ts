@@ -20,8 +20,8 @@ export default class YtContext implements NodeVisitorContext {
   public fileName!: string
 
   // DFA version 1 (0 - 8)
-  public DFAState
-  public currInterface: InterfaceDetail
+  public DFAState!: number
+  public currInterface!: InterfaceDetail
 
   public constructor(program: Program, public readonly _configuration: unknown) {
     this.basePath = program.getCompilerOptions().rootDir || program.getCurrentDirectory()

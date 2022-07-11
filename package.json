@@ -2,12 +2,20 @@
   "name": "yup-type-support",
   "version": "1.0.0",
   "description": "A typescript support for yup. Able to infer the yup schema from a typescript interface.",
-  "main": "index.js",
+  "main": "./build/index.js",
+  "files": [
+    "build/**",
+    "!dist/tests/**"
+  ],
   "scripts": {
+    "prepublish": "npm run all",
+    "all": "npm run build",
+    "build": "ttsc",
+    "clean": "rm -r build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Zinan",
-  "license": "ISC",
+  "author": "Zinan Guo",
+  "license": "MIT",
   "dependencies": {
     "@types/aws-lambda": "^8.10.101",
     "@znaaron/simple-ts-transform": "^1.1.2",

@@ -1,5 +1,5 @@
 import * as yup from 'yup';
-import guessSchema from '../../index'
+import guessSchema from '..'
 
 export interface account {
     id: number;

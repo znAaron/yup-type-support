@@ -34,7 +34,7 @@ function determineNodeGroup(node : ts.Node): string {
   }
 }
 
-const DFAMap = {
+const DFAMap: any = {
   0: {"InterfaceDeclaration": 1},
   1: {"ExportKeyword" : 2, "Identifier": 3},
   2: {"Identifier": 3},

@@ -5,168 +5,113 @@ import type YtContext from './YupType.Context';
 import type { InterfaceDetail, InterfaceEntry } from './YupType.Context';
 import type { NodeVisitor } from '@znaaron/simple-ts-transform'
 
-const enum DFANodeGroup {
-  InterfaceDeclaration = "InterfaceDeclaration",
-  ExportKeyword = "ExportKeyword",
-  Identifier = "Identifier",
-  PropertySignature = "PropertySignature",
-  QuestionToken = "QuestionToken",
-  TypeKeyword = "TypeKeyword",
-  Others = "Others"
-}
-
-function determineNodeGroup(node : ts.Node): string {
-  if (ts.isInterfaceDeclaration(node)){
-    return DFANodeGroup.InterfaceDeclaration;
-  } else if (ts.isToken(node) && node.kind === ts.SyntaxKind.ExportKeyword) {
-    return DFANodeGroup.ExportKeyword;
-  } else if (ts.isIdentifier(node)) {
-    return DFANodeGroup.Identifier;
-  } else if (ts.isPropertySignature(node)) {
-    return DFANodeGroup.PropertySignature;
-  } else if (ts.isToken(node) && node.kind === ts.SyntaxKind.QuestionToken) {
-    return DFANodeGroup.QuestionToken;
-  } else if (ts.isToken(node) && 
-    (node.kind === ts.SyntaxKind.StringKeyword
-    || node.kind === ts.SyntaxKind.NumberKeyword)) {
-    return DFANodeGroup.TypeKeyword;
-  } else {
-    return DFANodeGroup.Others;
-  }
-}
-
-const DFAMap: any = {
-  0: {"InterfaceDeclaration": 1},
-  1: {"ExportKeyword" : 2, "Identifier": 3},
-  2: {"Identifier": 3},
-  3: {"PropertySignature": 4, "InterfaceDeclaration": 8, "ExportKeyword": 8, 
-      "Identifier": 8, "QuestionToken": 8, "TypeKeyword": 8, "Others": 8},
-  4: {"Identifier": 5},
-  5: {"QuestionToken": 6, "TypeKeyword": 7},
-  6: {"TypeKeyword": 7},
-  7: {"PropertySignature": 4, "InterfaceDeclaration": 8, "ExportKeyword": 8, 
-      "Identifier": 8, "QuestionToken": 8, "TypeKeyword": 8, "Others": 8},
-  8: {}
-}
-
 export class DFAVisitor implements NodeVisitor<ts.Node> {
   public constructor(private readonly context: YtContext) {
   }
   
-  public wants(node: ts.Node): node is ts.Node {
-    return determineNodeGroup(node) in DFAMap[this.context.DFAState]
+  public wants(node: ts.Node): node is ts.VariableDeclaration {
+    return ts.isVariableDeclaration(node)
   }
   
   public visit(node: ts.Node) {
-    console.log("%i --- %s ---> %i",this.context.DFAState, determineNodeGroup(node).padEnd(20,' '), DFAMap[this.context.DFAState][determineNodeGroup(node)])
-
-    switch (this.context.DFAState) {
-      case (1):
-        if (determineNodeGroup(node) === DFANodeGroup.Identifier) {
-          this.context.currInterface.name = node.getText();
-        }
-        break;
-      case (2):
-        if (determineNodeGroup(node) === DFANodeGroup.Identifier) {
-          this.context.currInterface.name = node.getText();
-        }
-        break;
-      case (3):
-        break;
-      case (4):
-        if (determineNodeGroup(node) === DFANodeGroup.Identifier) {
-          this.context.currInterface.tmp.name = node.getText();
-        }
-        break;
-      case (5):
-        if (determineNodeGroup(node) === DFANodeGroup.TypeKeyword) {
-          if (node.kind === ts.SyntaxKind.StringKeyword) {
-            this.context.currInterface.tmp.type = "string";
-          } else if (node.kind === ts.SyntaxKind.NumberKeyword) {
-            this.context.currInterface.tmp.type = "number";
-          }
-        } else if (determineNodeGroup(node) === DFANodeGroup.QuestionToken) {
-          this.context.currInterface.tmp.optional = true;
-        }
-        break;
-      case (6):
-        if (determineNodeGroup(node) === DFANodeGroup.TypeKeyword) {
-          if (node.kind === ts.SyntaxKind.StringKeyword) {
-            this.context.currInterface.tmp.type = "string";
-          } else if (node.kind === ts.SyntaxKind.NumberKeyword) {
-            this.context.currInterface.tmp.type = "number";
-          }
-        }
-        break;
-      case (7):
-        this.context.currInterface.entries.push({
-          name: this.context.currInterface.tmp.name,
-          type: this.context.currInterface.tmp.type,
-          optional: this.context.currInterface.tmp.optional
-        })
-        this.context.currInterface.tmp = {
-          name: "",
-          type: "string",
-          optional: false
-        }
-
-        if (DFAMap[this.context.DFAState][determineNodeGroup(node)] === 8) {
-          console.log(this.context.currInterface);
-        }
-        break;
-      case (8):
-        break;
-      default:
-        break;
+    if (ts.isVariableDeclaration(node)) {
+      return this.visitVariableDeclaration(node)
     }
 
-    this.context.DFAState = DFAMap[this.context.DFAState][determineNodeGroup(node)];
-
-    if (this.context.DFAState == 8) {
-      const yupSchema = this.generateYupSchema(this.context.currInterface);
-      return [yupSchema, node];
-    }
     return [node]; 
   }
 
-  private generateYupSchema(detail: InterfaceDetail): ts.Node {
-    const schemaName = detail.name + "Schema";
-    const schemaEntries = detail.entries.map(this.generateYupSchema_entry);
+  private visitVariableDeclaration(node: ts.VariableDeclaration): ts.Node[] {
+    const typeNode = node.type as ts.TypeNode
+    if (!typeNode) {
+      return [node]
+    }
+
+    const initCallExpress = node.initializer as ts.CallExpression
+    // not target
+    if (!initCallExpress || initCallExpress.getText() !== "yup.object(/* guess schema */)") {
+      return [node]
+    }
+
+    const typeRefNode = typeNode as ts.TypeReferenceNode
+    const typeArgs = typeRefNode.typeArguments
+    // no type arg
+    if (!typeArgs) {
+      return [node]
+    }
+    const typeRef = typeArgs[0] as ts.TypeReferenceNode
+    const typeName = typeRef.typeName
+    // type name is not identifier
+    if(!ts.isIdentifier(typeName)) {
+      return [node]
+    }
+    const typeIdent = typeName as ts.Identifier;
+    const typeSymbol = this.context.checker.getSymbolAtLocation(typeIdent);
+    // can not find the declaration
+    if (!typeSymbol || !typeSymbol.declarations){
+      return [node]
+    }
+    // change later to support type as well
+    const typeDecl = typeSymbol.declarations[0] as ts.InterfaceDeclaration;
+
+    const interfaceDetail = this.getInterfaceDetail(typeDecl);
+    const transformedCallExpr = this.generateYupSchema(interfaceDetail)
+
+    const newNode = ts.factory.updateVariableDeclaration(node, node.name, undefined, node.type, transformedCallExpr);
+    return [newNode]
+  }
+
+  private getInterfaceDetail(node: ts.InterfaceDeclaration): InterfaceDetail {
+    const detail: InterfaceDetail = {
+      name: node.name.getText(),
+      entries: node.members.map(entry => this.propertySignatureToEntry(entry))
+    };
+    return detail;
+  }
+
+  private propertySignatureToEntry(node: ts.TypeElement): InterfaceEntry {
+    // add more support for other type than property signature
+    const propSigNode = node as ts.PropertySignature;
+    return {
+      name: propSigNode.name.getText(),
+      type: this.nodeTypeToYupType(propSigNode.type),
+      optional: propSigNode.questionToken ? true : false
+    }
+  }
+
+  private nodeTypeToYupType(type: ts.TypeNode | undefined): "number" | "string" | "unkown" {
+    if (!type) {
+      return "unkown"
+    }
+
+    switch (type.kind) {
+      case ts.SyntaxKind.StringKeyword:
+        return "string";
+      case ts.SyntaxKind.NumberKeyword:
+        return "number";
+      default:
+        return "unkown"
+    }
+  }
+
+  private generateYupSchema(detail: InterfaceDetail): ts.CallExpression {
+    
+    const schemaEntries = detail.entries.map((entry) => this.generateYupSchema_entry(entry));
   
-    const schemaObj = factory.createVariableStatement(
-      [factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-      factory.createVariableDeclarationList(
-        [factory.createVariableDeclaration(
-          factory.createIdentifier(schemaName),
-          undefined,
-          factory.createTypeReferenceNode(
-            factory.createQualifiedName(
-              factory.createIdentifier("yup"),
-              factory.createIdentifier("SchemaOf")
-            ),
-            [factory.createTypeReferenceNode(
-              factory.createIdentifier(detail.name),
-              undefined
-            )]
-          ),
-          factory.createCallExpression(
-            factory.createPropertyAccessExpression(
-              factory.createIdentifier("yup"),
-              factory.createIdentifier("object")
-            ),
-            undefined,
-            [factory.createObjectLiteralExpression(
-              schemaEntries,true
-            )]
-          )
-        )],
-        ts.NodeFlags.Const
-      )
-    )
+    const schemaObj = factory.createCallExpression (
+      factory.createPropertyAccessExpression(
+        factory.createIdentifier("yup"),
+        factory.createIdentifier("object")
+      ),
+      undefined,
+      [factory.createObjectLiteralExpression(
+        schemaEntries,true
+      )]
+    );
     
     return schemaObj;
   }
-  
+
   private generateYupSchema_entry(entry: InterfaceEntry) : ts.PropertyAssignment {
     return factory.createPropertyAssignment(
       factory.createIdentifier(entry.name),

@@ -1,19 +1,19 @@
 {
   "name": "yup-type-support",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A typescript support for yup. Able to infer the yup schema from a typescript interface.",
   "main": "./build/index.js",
   "typings": "./dist/index.d.ts",
   "files": [
     "build/**",
-    "!dist/tests/**"
+    "!build/tests/**"
   ],
   "scripts": {
     "prepublishOnly": "npm run all",
     "all": "npm run build",
     "build": "ttsc",
     "clean": "rm -r build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run build; jest --verbose ./build/tests"
   },
   "author": "Zinan Guo",
   "license": "MIT",
@@ -23,6 +23,9 @@
     "yup": "^0.32.11"
   },
   "devDependencies": {
+    "@types/jest": "^28.1.6",
+    "jest": "^28.1.3",
+    "ts-jest": "^28.0.7",
     "ttypescript": "^1.5.13",
     "typescript": "^4.7.4"
   }

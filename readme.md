@@ -23,7 +23,6 @@ Next you need to edit the tsconfig file to add the plugin to the compiler option
 ```json
 {
   "compilerOptions": {
-    ...
     "plugins": [{ "transform": "yup-type-support", "type": "program" }],
   }
 }

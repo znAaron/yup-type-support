@@ -15,6 +15,7 @@
     "clean": "rm -r build",
     "test": "npm run build; jest --verbose ./build/tests"
   },
+  "homepage": "https://github.com/znAaron/yup-type-support",
   "author": "Zinan Guo",
   "license": "MIT",
   "dependencies": {

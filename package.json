@@ -1,6 +1,6 @@
 {
   "name": "yup-type-support",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A typescript support for yup. Able to infer the yup schema from a typescript interface.",
   "main": "./build/index.js",
   "typings": "./dist/index.d.ts",
